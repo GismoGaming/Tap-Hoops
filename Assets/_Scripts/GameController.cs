@@ -4,6 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+using Gismo.Core.Shop;
+
 namespace Gismo.Core
 {
     public class GameController : MonoBehaviour
@@ -39,6 +41,7 @@ namespace Gismo.Core
 
         [SerializeField] private RectTransform mainCanvas;
 
+        private List<PowerUpItem> usedPowerups;
         enum StylePointDescription { No_Ground, No_Input, Close_Call, Upward_Dunk}
 
         [System.Serializable]
@@ -58,9 +61,17 @@ namespace Gismo.Core
         [SerializeField] private GameObject shopUI;
         [SerializeField] private GameObject mainUI;
 
+        [SerializeField] private int maxBaskets;
+        [SerializeField] private float maxBasketsTime;
+
         private List<StylePointDescription> stylePointsToDisplay;
 
         [SerializeField] private HoopController hoopController;
+
+        [SerializeField] private Transform powerupBanner;
+        [SerializeField] private GameObject powerupBannerItemPrefab;
+        [SerializeField] private GameObject powerupBannerRoot;
+        [SerializeField] private StyleShopController shopController;
 
         private void Awake()
         {
@@ -111,10 +122,20 @@ namespace Gismo.Core
 
             startText.SetActive(true);
 
+            foreach(PowerUpItem i in usedPowerups)
+            {
+                i.OnDeActivated?.Invoke();
+            }
+
             if (showAd)
             {
                 Ads.AdManager.instance.ShowAd(Ads.AdType.Skippable);
             }
+        }
+
+        public void AddUsedPowerup(PowerUpItem i)
+        {
+            usedPowerups.Add(i);
         }
 
         void UpdateMainHud()
@@ -161,6 +182,23 @@ namespace Gismo.Core
             countDownClockRunning = false;
             basketCount = 0;
 
+            usedPowerups = new List<PowerUpItem>();
+
+            foreach (Transform t in powerupBanner)
+                Destroy(t.gameObject);
+
+            bool hasPowerups = false;
+            foreach(PowerUpItem item in shopController.powerupItems)
+            {
+                if(item.powerUpsGotten != 0)
+                {
+                    hasPowerups = true;
+                    Instantiate(powerupBannerItemPrefab, powerupBanner).GetComponent<PowerupBannerButton>().SetupItemButton(item);
+                }
+            }
+
+            powerupBannerRoot.SetActive(hasPowerups);
+
             UpdateMainHud();
             UpdateScoreHud();
 
@@ -192,6 +230,8 @@ namespace Gismo.Core
                 largeUpgradeShopButton.SetActive(false);
                 shortUpgradeShopButton.SetActive(true);
                 startText.SetActive(false);
+
+                powerupBannerRoot.SetActive(false);
             }
             basketCount++;
 
@@ -229,7 +269,14 @@ namespace Gismo.Core
 
         private float GetCountDownTime()
         {
-            return Tools.StaticFunctions.ReMap(Mathf.Clamp(basketCount, basketBounds.x, basketBounds.y), basketBounds, countDownTimeBounds);
+            if (basketCount >= maxBaskets)
+            {
+                return maxBasketsTime;
+            }
+            else
+            {
+                return Tools.StaticFunctions.ReMap(Mathf.Clamp(basketCount, basketBounds.x, basketBounds.y), basketBounds, countDownTimeBounds);
+            } 
         }
 
         private void DoStylePointPopup()
@@ -246,7 +293,6 @@ namespace Gismo.Core
                 StylePointInfoPopup info = stylePointLookupTable.GetItem(description);
 
                 Statics.stylePoints += info.points;
-
                 UpdateScoreHud();
 
                 ShowPopup(info.popupText, mainCanvas);

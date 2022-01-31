@@ -12,6 +12,7 @@ namespace Gismo.Core.Shop
         private const string BALLITEMS = "Ball Item Unlocks";
         private const string BGITEMS = "BG Item Unlocks";
         private const string HOOPFXITEMS = "Hoop FX Item Unlocks";
+        private const string PURCHASEDPOWERUPS = "Purchased Powerups";
 
         private const string SELECTEDTRAILITEM = "Selected Trail Item";
         private const string SELECTEDBALLITEM = "Selected Ball Item";
@@ -25,6 +26,7 @@ namespace Gismo.Core.Shop
         [SerializeField] private List<BallItem> ballItems;
         [SerializeField] private List<BGItem> bgItems;
         [SerializeField] private List<HoopFXItem> hoopFXItems;
+        public List<PowerUpItem> powerupItems;
 
         [SerializeField] private List<string> iapIDs;
 
@@ -34,12 +36,14 @@ namespace Gismo.Core.Shop
         [SerializeField] private Transform bgItemDrawArea;
         [SerializeField] private Transform hoopFXItemDrawArea;
         [SerializeField] private Transform stylePointDrawArea;
+        [SerializeField] private Transform powerupItemDrawArea;
 
         [SerializeField] private GameObject trailItemButtonPrefab;
         [SerializeField] private GameObject ballItemButtonPrefab;
         [SerializeField] private GameObject bgItemButtonPrefab;
         [SerializeField] private GameObject hoopFXItemPrefab;
         [SerializeField] private GameObject stylePointButtonPrefab;
+        [SerializeField] private GameObject powerupItemPrefab;
 
         private int selectedTrailID;
         private int selectedBallID;
@@ -143,6 +147,12 @@ namespace Gismo.Core.Shop
                 {
                     noAdsButton = newButton.GetComponent<UnityEngine.UI.Button>();
                 }
+            }
+
+            foreach(PowerUpItem item in powerupItems)
+            {
+                GameObject newButton = Instantiate(powerupItemPrefab, powerupItemDrawArea);
+                newButton.GetComponent<UI.PowerupItemButton>().Initalize(item, this);
             }
         }
 
@@ -269,6 +279,27 @@ namespace Gismo.Core.Shop
                     }
                 }
             }
+
+            string purchasedPowerups = PlayerPrefs.GetString(PURCHASEDPOWERUPS, NOITEMINDICATOR);
+            if (purchasedPowerups != NOITEMINDICATOR)
+            {
+                Dictionary<int, int> strings = new Dictionary<int, int>();
+                foreach (string itemPowerups in purchasedPowerups.Split('.'))
+                {
+                    if (int.TryParse(itemPowerups.Split('|')[0], out int id) && int.TryParse(itemPowerups.Split('|')[1], out int numberGotten))
+                    {
+                        strings.Add(id, numberGotten);
+                    }
+                }
+                foreach (PowerUpItem item in powerupItems)
+                {
+                    item.powerUpsGotten = 0;
+                    if(strings.ContainsKey(item.id))
+                    {
+                        item.powerUpsGotten = strings[item.id];
+                    }
+                }
+            }
         }
 
         [ContextMenu("Clear Unlocks")]
@@ -298,6 +329,12 @@ namespace Gismo.Core.Shop
                     i.unlocked = false;
             }
 
+            foreach (PowerUpItem i in powerupItems)
+            {
+                if (i.id != -1)
+                    i.powerUpsGotten = 0;
+            }
+
             PlayerPrefs.DeleteAll();
 
             SaveUnlockedItems();
@@ -306,7 +343,7 @@ namespace Gismo.Core.Shop
 
 
         [ContextMenu("Force Save")]
-        private void SaveUnlockedItems()
+        public void SaveUnlockedItems()
         {         
             string trailSave = "";
             foreach(TrailItem item in trailItems)
@@ -357,6 +394,13 @@ namespace Gismo.Core.Shop
             hoopFXSave.Trim();
             PlayerPrefs.SetString(HOOPFXITEMS, hoopFXSave);
 
+            string powerupSave = "";
+
+            foreach (PowerUpItem item in powerupItems)
+            {
+                powerupSave += $"{item.id}|{item.powerUpsGotten}.";
+            }
+            PlayerPrefs.SetString(PURCHASEDPOWERUPS, powerupSave);
             PlayerPrefs.Save();
         }
 
@@ -466,7 +510,7 @@ namespace Gismo.Core.Shop
 
         private bool CanBuyItem(ShopItem item)
         {
-            if (item.unlocked)
+            if (item.unlocked && item.GetType() != typeof(PowerUpItem))
                 return false;
             if (item.cost > Statics.stylePoints)
                 return false;
@@ -580,5 +624,16 @@ namespace Gismo.Core.Shop
         public bool doColorChange;
         public Color bgColorSecondary;
         public float colorChangeTime;
+    }
+
+    [Serializable]
+    public class PowerUpItem : ShopItem
+    {
+        public int powerUpsGotten;
+
+        public bool activated;
+
+        public UnityEvent OnActivated;
+        public UnityEvent OnDeActivated;
     }
 }

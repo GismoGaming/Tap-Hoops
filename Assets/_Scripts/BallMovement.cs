@@ -19,7 +19,7 @@ namespace Gismo.Core
 
         [SerializeField] private float tapForceCurrent;
 
-        [SerializeField] private Vector2 tapForceTimeBounds;
+        public Vector2 tapForceTimeBounds;
 
         [SerializeField] private Transform tapForceCircle;
         private Vector3 tapForceCircleStartSize;
@@ -35,7 +35,12 @@ namespace Gismo.Core
         [SerializeField] private Transform trailFXRoot;
         [SerializeField] private Transform nonRotatingItems;
 
+        [SerializeField] private float maxSpeed;
+
         private bool isGrounded;
+
+        [HideInInspector]
+        public bool powerShotMode;
 
         void Awake()
         {
@@ -65,6 +70,14 @@ namespace Gismo.Core
             canTap = true;
         }
 
+        private void FixedUpdate()
+        {
+            if (rb.velocity.magnitude > maxSpeed)
+            {
+                rb.velocity = rb.velocity.normalized * maxSpeed;
+            }
+        }
+
         void Update()
         {
             if (!Tools.ScreenBoundaries.ObjectInBounds(transform))
@@ -89,7 +102,7 @@ namespace Gismo.Core
                 }
             }
 
-            if(canTap && Statics.gameRunning)
+            if (canTap && Statics.gameRunning)
             {
                 if (Input.GetMouseButtonDown(0))
                 {
@@ -105,6 +118,7 @@ namespace Gismo.Core
                 if(Input.GetMouseButtonUp(0))
                 {
                     tapForceCircle.localScale = Vector3.zero;
+
                     tapForceCurrent = Mathf.Clamp(Time.time - tapStartTime + 1f, tapForceTimeBounds.x, tapForceTimeBounds.y);
                     Audio.AudioManager.Play("Ball Tap");
                     switch (CurrentFaceDirection)
@@ -116,6 +130,9 @@ namespace Gismo.Core
                             rb.AddForce(tapForceCurrent * Statics.currentForce * rightForceDirection);
                             break;
                     }
+
+                    if (powerShotMode)
+                        Effects.CameraShake.instance.DoShake(0.15f, 0.4f);
 
                     if (!Statics.playerAddedForce)
                         Statics.playerAddedForce = true;

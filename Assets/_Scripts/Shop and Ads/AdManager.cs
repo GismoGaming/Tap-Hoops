@@ -61,7 +61,6 @@ namespace Gismo.Ads
 
         public async void InitServices()
         {
-            Debug.Log("INITS");
             try
             {
                 InitializationOptions initializationOptions = new InitializationOptions();
@@ -95,7 +94,6 @@ namespace Gismo.Ads
                     break;
                 default:
                 case AdType.Skippable:
-                    if (interstitialAd == null || interstitialAd.AdState != AdState.Loaded)
                     if (interstitialAd == null || interstitialAd.AdState != AdState.Loaded)
                     {
                         Debug.Log("Ads aren't ready");
@@ -149,14 +147,12 @@ namespace Gismo.Ads
         {
             //pre-load the next ad
             interstitialAd.Load();
-            Debug.Log("interstitialAd shown!");
         }
 
         void OnRewardedAdShown(object sender, EventArgs args)
         {
             //pre-load the next ad
             rewardedAd.Load();
-            Debug.Log("rewardedAd shown!");
         }
     }
 }

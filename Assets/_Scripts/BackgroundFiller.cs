@@ -25,11 +25,11 @@ namespace Gismo.Effects
 
             if (item.drawMode == SpriteDrawMode.Simple)
             {
-                transform.localScale = new Vector2(Tools.ScreenBoundaries.GetWorldWidth(), Tools.ScreenBoundaries.GetWorldHeight()) * item.bgSprite.pixelsPerUnit/4;
+                transform.localScale = new Vector2(Tools.ScreenBoundaries.GetWorldWidth()*1.2f, Tools.ScreenBoundaries.GetWorldHeight()* 1.2f) * item.bgSprite.pixelsPerUnit/4;
             }
             else
             {
-                spriteRenderer.size = new Vector2(Tools.ScreenBoundaries.GetWorldWidth(), Tools.ScreenBoundaries.GetWorldHeight());
+                spriteRenderer.size = new Vector2(Tools.ScreenBoundaries.GetWorldWidth()* 1.2f, Tools.ScreenBoundaries.GetWorldHeight()* 1.2f);
             }
 
             if (item.doColorChange)
